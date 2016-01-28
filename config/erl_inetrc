@@ -1,0 +1,15 @@
+%% -- ERLANG INET CONFIGURATION FILE --
+%% See https://www.erlang.org/doc/apps/erts/inet_cfg.html
+%%
+%% This file is used when application is started with
+%% environment variable: ERL_INETRC
+%%
+%% export ERL_INETRC=/path/to/erl_inetrc
+
+%% Enable ipv6
+{inet6, true}.
+
+%% Using these module both ipv6 and ipv4
+%% can be used for TCP and UDP sockets
+{tcp,inet6_tcp}.
+{udp,inet6_udp}.

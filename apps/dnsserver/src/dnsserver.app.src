@@ -1,0 +1,30 @@
+{application, dnsserver,
+  [{description, "An Authorative DNS(SEC) server"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {dnsserver_app, []}},
+    {applications,
+      [kernel,
+        stdlib,
+        sasl,
+        lager
+      ]},
+    {env, [
+      {tcp_port, 1053},
+      {tcp_nof_accept_sockets, 20},
+      {tcp_close_socket, true},
+      %% function spec:
+      %% -spec(handle_data(Socket:: socket, Data :: term()) ->
+      %%       {ok, CloseSocket :: boolean()}).
+      {tcp_function, {echo_server, handle_tcp_data, 2}},
+      {udp_port, 1053},
+      {udp_function, {echo_server, handle_udp_data, 2}}
+    ]
+    },
+
+    {modules, []},
+
+    {maintainers, []},
+    {licenses, []},
+    {links, []}
+  ]}.
