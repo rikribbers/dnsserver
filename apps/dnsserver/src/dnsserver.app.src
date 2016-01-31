@@ -16,9 +16,9 @@
       %% function spec:
       %% -spec(handle_data(Socket:: socket, Data :: term()) ->
       %%       {ok, CloseSocket :: boolean()}).
-      {tcp_function, {echo_server, handle_tcp_data, 2}},
+      {tcp_function, {tcp_echo_server, handle_data, 2}},
       {udp_port, 1053},
-      {udp_function, {echo_server, handle_udp_data, 2}}
+      {udp_function, {udp_echo_server, handle_data, 2}}
     ]
     },
 

@@ -70,7 +70,7 @@ init([]) ->
   UdpServer = {udp_server, {udp_server, start_link, []}, permanent, 30000, worker, [udp_server]},
 
   %% Get the module for handling data from the configuration.
-  {ok, {Module, _Function,_Arity}} = application:get_env(udp_function),
+  {ok, {Module, _Function,_Arity}} = application:get_env(dnsserver,udp_function),
   DataHandler = {udp_function_server, {Module, start_link, []},
     permanent, 30000, worker, [Module]},
 

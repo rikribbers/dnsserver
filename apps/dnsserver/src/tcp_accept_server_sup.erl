@@ -69,12 +69,12 @@ start_link() ->
   ignore |
   {error, Reason :: term()}).
 init([]) ->
-  {ok, Port} = application:get_env(tcp_port),
-  {ok, NofAcceptSockets} = application:get_env(tcp_nof_accept_sockets),
+  {ok, Port} = application:get_env(dnsserver,tcp_port),
+  {ok, NofAcceptSockets} = application:get_env(dnsserver,tcp_nof_accept_sockets),
   lager:info("Init tcp_accept_server_sup on Port=~p NofAcceptSockets=~p...", [Port, NofAcceptSockets]),
 
   %% Create the listen socket
-  {ok, ListenSocket} = gen_tcp:listen(1055, [{active, once}, inet6]),
+  {ok, ListenSocket} = gen_tcp:listen(Port, [{active, once}, inet6]),
   lager:debug("ListenSocket=~p", [ListenSocket]),
 
   Child = {tcp_server,

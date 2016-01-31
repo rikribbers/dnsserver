@@ -18,13 +18,13 @@
 %%%
 %%% @end
 %%%-------------------------------------------------------------------
--module(echo_server).
+-module(tcp_echo_server).
 -author("rik.ribbers").
 
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, handle_tcp_data/2, handle_udp_data/2]).
+-export([start_link/0, handle_data/2]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -61,23 +61,10 @@ start_link() ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(handle_tcp_data(Socket :: socket, Data :: term()) ->
+-spec(handle_data(Socket :: socket, Data :: term()) ->
   {ok, CloseSocket :: boolean()}).
-handle_tcp_data(Socket, Data) ->
-  gen_server:call(?MODULE, {tcp_echo, Socket, Data}).
-
-%%--------------------------------------------------------------------
-%% @doc
-%%
-%% Handle the upd data
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec(handle_udp_data(Socket :: socket, Data :: term()) ->
-  {ok, CloseSocket :: boolean()}).
-handle_udp_data(Socket, Data) ->
-  gen_server:call(?MODULE, {udp_echo, Socket, Data}).
-
+handle_data(Socket, Data) ->
+  gen_server:call(?MODULE, {echo, Socket, Data}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -98,7 +85,7 @@ handle_udp_data(Socket, Data) ->
   {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term()} | ignore).
 init([]) ->
-  {ok, CloseSocket} = application:get_env(tcp_close_socket),
+  {ok, CloseSocket} = application:get_env(dnsserver,tcp_close_socket),
   {ok, #state{closesocket = CloseSocket}}.
 
 %%--------------------------------------------------------------------
@@ -116,14 +103,9 @@ init([]) ->
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
   {stop, Reason :: term(), NewState :: #state{}}).
-handle_call({tcp_echo, Socket, RawData}, _From, State) ->
+handle_call({echo, Socket, RawData}, _From, State) ->
   %% simply echo back on the socket
   gen_tcp:send(Socket, io_lib:fwrite("~s", [RawData])),
-  {reply, {ok, State#state.closesocket}, State};
-
-handle_call({udp_echo, Socket, RawData}, _From, State) ->
-  %% simply echo back on the socket
-  gen_udp:send(Socket, io_lib:fwrite("~s", [RawData])),
   {reply, {ok, State#state.closesocket}, State}.
 
 %%--------------------------------------------------------------------

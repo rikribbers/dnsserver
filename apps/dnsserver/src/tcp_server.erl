@@ -79,8 +79,8 @@ start_link(ListenSocket) ->
   {stop, Reason :: term()} | ignore).
 init([ListenSocket]) ->
   lager:debug("init ListenSocket=~p", [ListenSocket]),
-  {ok, CloseSocket} = application:get_env(tcp_close_socket),
-  {ok, {Module, FunctionName, Arity}} = application:get_env(tcp_function),
+  {ok, CloseSocket} = application:get_env(dnsserver,tcp_close_socket),
+  {ok, {Module, FunctionName, Arity}} = application:get_env(dnsserver,tcp_function),
   Function = fun Module:FunctionName/Arity,
   %% LATER : Implement timeout
   Timeout = 1000,

@@ -1,0 +1,6 @@
+language: erlang
+notifications:
+  email: rik.ribbers@gmail.com
+otp_release:
+  - 18.2
+script: "./rebar3 eunit ct"

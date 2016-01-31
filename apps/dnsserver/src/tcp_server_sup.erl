@@ -73,7 +73,7 @@ init([]) ->
     permanent, 10500, supervisor, [tcp_accept_server_sup]},
 
   %% Get the module for handling data from the configuration.
-  {ok, {Module, _Function,_Arity}} = application:get_env(tcp_function),
+  {ok, {Module, _Function,_Arity}} = application:get_env(dnsserver,tcp_function),
   DataHandler = {tcp_function_server, {Module, start_link, []},
     permanent, 30000, worker, [Module]},
 
