@@ -1,6 +1,8 @@
 # dnsserver
 An authorative DNS(SEC) server in Erlang.
 
+[![Build Status](https://travis-ci.org/rikribbers/dnsserver.svg?branch=master)](https://travis-ci.org/rikribbers/dnsserver)
+
 More or less based on:
 
 - https://github.com/aetrion/erl-dns
