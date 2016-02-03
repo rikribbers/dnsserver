@@ -67,6 +67,7 @@ start_link() ->
   ignore |
   {error, Reason :: term()}).
 init([]) ->
+  lager:debug("Starting udp_server_sup..."),
   UdpServer = {udp_server, {udp_server, start_link, []}, permanent, 30000, worker, [udp_server]},
 
   %% Get the module for handling data from the configuration.

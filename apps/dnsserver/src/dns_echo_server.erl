@@ -18,7 +18,7 @@
 %%%
 %%% @end
 %%%-------------------------------------------------------------------
--module(udp_echo_server).
+-module(dns_echo_server).
 -author("rik.ribbers").
 
 -behaviour(gen_server).
@@ -57,7 +57,7 @@ start_link() ->
 %%--------------------------------------------------------------------
 %% @doc
 %%
-%% Handle the upd data
+%% Handle the tcp data
 %%
 %% @end
 %%--------------------------------------------------------------------
@@ -65,7 +65,6 @@ start_link() ->
   {ok, CloseSocket :: boolean()}).
 handle_data(Socket, Data) ->
   gen_server:call(?MODULE, {echo, Socket, Data}).
-
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -104,9 +103,9 @@ init([]) ->
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
   {stop, Reason :: term(), NewState :: #state{}}).
-handle_call({echo, Socket, RawData}, _From, State) ->
-  %% simply echo back on the socket
-  gen_udp:send(Socket, io_lib:fwrite("~s", [RawData])),
+handle_call({echo, Query}, _From, State) ->
+  %% Simply log the query
+  lager:info("echo query=~p",[Query]),
   {reply, {ok, State#state.closesocket}, State}.
 
 %%--------------------------------------------------------------------
