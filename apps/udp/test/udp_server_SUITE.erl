@@ -33,9 +33,9 @@ all() ->
   [ipv4_test, ipv6_test].
 
 init_per_testcase(_TestCase, Config) ->
-  test_utils:set_environment_variables(),
+  udp_test_utils:set_environment_variables(),
   ct:log(sys_state, "Starting the supervisor~n"),
-  {ok, SuperPid} = udp_server_sup:start_link(),
+  {ok, SuperPid} = udp_sup:start_link(),
   [{supervisor, SuperPid}| Config].
 
 end_per_testcase(_TestCase, Config) ->
@@ -46,7 +46,7 @@ end_per_testcase(_TestCase, Config) ->
 
 %% Test ipv4 connectivity
 ipv4_test(_Config) ->
-  {ok, Port} = application:get_env(dnsserver,udp_port),
+  {ok, Port} = application:get_env(udp,udp_port),
   {ok,Socket} = gen_udp:open(0, [inet,{active,true}]),
   gen_udp:send(Socket,"127.0.0.1", Port,"Some Data"),
   receive
@@ -62,7 +62,7 @@ ipv4_test(_Config) ->
 
 %% Test ipv6 connectivity
 ipv6_test(_Config) ->
-  {ok, Port} = application:get_env(dnsserver,udp_port),
+  {ok, Port} = application:get_env(udp,udp_port),
   {ok,Socket} = gen_udp:open(0, [inet6,{active,true}]),
   gen_udp:send(Socket,"::1", Port,"Some Data"),
   receive

@@ -1,0 +1,23 @@
+{application, udp,
+ [{description, "An generic UDP server with pluggable packet handler"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {mod, { udp_app, []}},
+  {applications,
+   [kernel,
+    stdlib,
+    lager
+   ]},
+  {env,[
+   {udp_port, 1053},
+   {udp_close_socket,true},
+   %% function spec:
+   %% -spec(handle_data(Socket:: socket, Data :: term()) ->
+   %%       {ok, CloseSocket :: boolean()}).
+   {udp_function, {dns_echo_server, handle_data, 2}}
+  ]},
+  {modules, [udp_server]},
+  {maintainers, []},
+  {licenses, []},
+  {links, []}
+ ]}.

@@ -14,11 +14,12 @@
 %%% ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 %%% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 %%%
-%%% @doc Supervisor for the TCP server
+%%% @doc Supervisor for the TCP server more or less based on:
+%%% http://learnyousomeerlang.com/buckets-of-sockets#sockserv-revisited
 %%%
 %%% @end
 %%%-------------------------------------------------------------------
--module(tcp_server_sup).
+-module(tcp_sup).
 -author("rik.ribbers").
 
 -behaviour(supervisor).
@@ -42,9 +43,9 @@
 %% @end
 %%--------------------------------------------------------------------
 -spec(start_link() ->
-  {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
+    {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link() ->
-  supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
 %%%===================================================================
 %%% Supervisor callbacks
@@ -61,26 +62,36 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 -spec(init(Args :: term()) ->
-  {ok, {SupFlags :: {RestartStrategy :: supervisor:strategy(),
-    MaxR :: non_neg_integer(), MaxT :: non_neg_integer()},
-    [ChildSpec :: supervisor:child_spec()]
-  }} |
-  ignore |
-  {error, Reason :: term()}).
+    {ok, {SupFlags :: {RestartStrategy :: supervisor:strategy(),
+        MaxR :: non_neg_integer(), MaxT :: non_neg_integer()},
+        [ChildSpec :: supervisor:child_spec()]
+    }} |
+    ignore |
+    {error, Reason :: term()}).
 init([]) ->
-  lager:debug("Starting tcp_server_sup..."),
-  %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
-  TcpAcceptServer = {tcp_accept_server_sup, {tcp_accept_server_sup, start_link, []},
-    permanent, 10500, supervisor, [tcp_accept_server_sup]},
+    lager:debug("Starting tcp_sup..."),
+    %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
+    TcpAcceptServer = {tcp_accept_server_sup, {tcp_accept_server_sup, start_link, []},
+        permanent, 10500, supervisor, [tcp_accept_server_sup]},
 
-  %% Get the module for handling data from the configuration.
-  {ok, {Module, _Function,_Arity}} = application:get_env(dnsserver,tcp_function),
-  DataHandler = {tcp_function_server, {Module, start_link, []},
-    permanent, 30000, worker, [Module]},
+    %% Get the module for handling data from the configuration.
+    {ok, {Module, _Function,_Arity}} = application:get_env(tcp,tcp_function),
 
-  Children = [TcpAcceptServer, DataHandler],
-  RestartStrategy = {one_for_one, 5, 3600},
-  {ok, {RestartStrategy, Children}}.
+    Children = [TcpAcceptServer],
+    RestartStrategy = {one_for_one, 5, 3600},
+
+    %% check if process is already running, if so assume it is supervised
+    %% No need to start it here then.
+    case whereis(Module) of
+        undefined ->
+            DataHandler = {Module, {Module, start_link, []},
+                permanent, 30000, worker, [Module]},
+            {ok, {RestartStrategy, lists:append(Children,[DataHandler])}};
+        _ ->
+            lager:info("Already started Module=~p",[Module]),
+            {ok, {RestartStrategy, Children}}
+    end.
+
 
 %%====================================================================
 %% Internal functions

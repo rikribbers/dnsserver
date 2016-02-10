@@ -14,21 +14,23 @@
 %%% ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 %%% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 %%%
-%%% @doc Supervisor for the UDP server
+%%% @doc
+%%%
+%%% TCP socket server supervisor more or less based on:
+%%% http://learnyousomeerlang.com/buckets-of-sockets#sockserv-revisited
+%%%
 %%% @end
 %%%-------------------------------------------------------------------
--module(udp_server_sup).
+-module(tcp_accept_server_sup).
 -author("rik.ribbers").
 
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
+-export([start_link/0, start_accept_socket/0]).
 
 %% Supervisor callbacks
 -export([init/1]).
-
--define(SERVER, ?MODULE).
 
 %%%===================================================================
 %%% API functions
@@ -43,7 +45,7 @@
 -spec(start_link() ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link() ->
-  supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+  supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 %%%===================================================================
 %%% Supervisor callbacks
@@ -67,17 +69,27 @@ start_link() ->
   ignore |
   {error, Reason :: term()}).
 init([]) ->
-  lager:debug("Starting udp_server_sup..."),
-  UdpServer = {udp_server, {udp_server, start_link, []}, permanent, 30000, worker, [udp_server]},
+  {ok, Port} = application:get_env(tcp,tcp_port),
+  {ok, NofAcceptSockets} = application:get_env(tcp,tcp_nof_accept_sockets),
+  lager:info("Init tcp_accept_server_sup on Port=~p NofAcceptSockets=~p...", [Port, NofAcceptSockets]),
 
-  %% Get the module for handling data from the configuration.
-  {ok, {Module, _Function,_Arity}} = application:get_env(dnsserver,udp_function),
-  DataHandler = {udp_function_server, {Module, start_link, []},
-    permanent, 30000, worker, [Module]},
+  %% Create the listen socket
+  {ok, ListenSocket} = gen_tcp:listen(Port, [{active, once}, inet6]),
+  lager:debug("ListenSocket=~p", [ListenSocket]),
 
-  Children = [UdpServer,DataHandler],
-  RestartStrategy = {one_for_all, 5, 3600},
-  {ok, {RestartStrategy, Children}}.
+  Child = {tcp_server,
+    {tcp_server, start_link, [ListenSocket]}, % pass the socket!
+    temporary, 30000, worker, [tcp_server]},
+
+  spawn_link(fun() -> [start_accept_socket() || _ <- lists:seq(1, NofAcceptSockets)] end),
+
+  {ok, {{simple_one_for_one, 60, 3600},
+    [Child]}}.
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+%% Start a child process that accept socket connections
+start_accept_socket() ->
+  supervisor:start_child(?MODULE, []).

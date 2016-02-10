@@ -14,23 +14,21 @@
 %%% ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 %%% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 %%%
-%%% @doc
-%%%
-%%% TCP socket server supervisor more or less based on:
-%%% http://learnyousomeerlang.com/buckets-of-sockets#sockserv-revisited
-%%%
+%%% @doc Supervisor for the UDP server
 %%% @end
 %%%-------------------------------------------------------------------
--module(tcp_accept_server_sup).
+-module(udp_sup).
 -author("rik.ribbers").
 
 -behaviour(supervisor).
 
 %% API
--export([start_link/0, start_accept_socket/0]).
+-export([start_link/0]).
 
 %% Supervisor callbacks
 -export([init/1]).
+
+-define(SERVER, ?MODULE).
 
 %%%===================================================================
 %%% API functions
@@ -43,9 +41,9 @@
 %% @end
 %%--------------------------------------------------------------------
 -spec(start_link() ->
-  {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
+    {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link() ->
-  supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
 %%%===================================================================
 %%% Supervisor callbacks
@@ -62,34 +60,34 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 -spec(init(Args :: term()) ->
-  {ok, {SupFlags :: {RestartStrategy :: supervisor:strategy(),
-    MaxR :: non_neg_integer(), MaxT :: non_neg_integer()},
-    [ChildSpec :: supervisor:child_spec()]
-  }} |
-  ignore |
-  {error, Reason :: term()}).
+    {ok, {SupFlags :: {RestartStrategy :: supervisor:strategy(),
+        MaxR :: non_neg_integer(), MaxT :: non_neg_integer()},
+        [ChildSpec :: supervisor:child_spec()]
+    }} |
+    ignore |
+    {error, Reason :: term()}).
 init([]) ->
-  {ok, Port} = application:get_env(dnsserver,tcp_port),
-  {ok, NofAcceptSockets} = application:get_env(dnsserver,tcp_nof_accept_sockets),
-  lager:info("Init tcp_accept_server_sup on Port=~p NofAcceptSockets=~p...", [Port, NofAcceptSockets]),
+    lager:debug("Starting udp_sup..."),
+    UdpServer = {udp_server, {udp_server, start_link, []}, permanent, 30000, worker, [udp_server]},
 
-  %% Create the listen socket
-  {ok, ListenSocket} = gen_tcp:listen(Port, [{active, once}, inet6]),
-  lager:debug("ListenSocket=~p", [ListenSocket]),
+    %% Get the module for handling data from the configuration.
+    {ok, {Module, _Function,_Arity}} = application:get_env(udp,udp_function),
 
-  Child = {tcp_server,
-    {tcp_server, start_link, [ListenSocket]}, % pass the socket!
-    temporary, 30000, worker, [tcp_server]},
+    Children = [UdpServer],
+    RestartStrategy = {one_for_all, 5, 3600},
 
-  spawn_link(fun() -> [start_accept_socket() || _ <- lists:seq(1, NofAcceptSockets)] end),
-
-  {ok, {{simple_one_for_one, 60, 3600},
-    [Child]}}.
+    %% check if process is already running, if so assume it is supervised
+    %% No need to start it here then.
+    case whereis(Module) of
+        undefined ->
+            DataHandler = {Module, {Module, start_link, []},
+                permanent, 30000, worker, [Module]},
+            {ok, {RestartStrategy, lists:append(Children,[DataHandler])}};
+        _ ->
+            lager:info("Already started Module=~p",[Module]),
+            {ok, {RestartStrategy, Children}}
+    end.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
-%% Start a child process that accept socket connections
-start_accept_socket() ->
-  supervisor:start_child(?MODULE, []).

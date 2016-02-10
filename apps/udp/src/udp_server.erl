@@ -14,17 +14,16 @@
 %%% ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 %%% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 %%%
-%%% @doc
-%%%
+%%% @doc Worker for the UDP server
 %%% @end
 %%%-------------------------------------------------------------------
--module(udp_echo_server).
+-module(udp_server).
 -author("rik.ribbers").
 
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, handle_data/2]).
+-export([start_link/0]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -36,8 +35,9 @@
 
 -define(SERVER, ?MODULE).
 
-%% closesocket: close the socket after
--record(state, {closesocket}).
+%% socket   : The socket
+%% function : Function to call when data is received
+-record(state, {socket,function}).
 
 %%%===================================================================
 %%% API
@@ -53,19 +53,6 @@
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link() ->
   gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
-
-%%--------------------------------------------------------------------
-%% @doc
-%%
-%% Handle the upd data
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec(handle_data(Socket :: socket, Data :: term()) ->
-  {ok, CloseSocket :: boolean()}).
-handle_data({Socket,Host,Port}, Data) ->
-  gen_server:call(?MODULE, {echo, {Socket, Host, Port}, Data}).
-
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -86,8 +73,17 @@ handle_data({Socket,Host,Port}, Data) ->
   {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term()} | ignore).
 init([]) ->
-  {ok, CloseSocket} = application:get_env(dnsserver,tcp_close_socket),
-  {ok, #state{closesocket = CloseSocket}}.
+  lager:debug("init"),
+  {ok,Port} = application:get_env(udp,udp_port),
+
+  {ok, {Module, FunctionName, Arity}} = application:get_env(udp,udp_function),
+  Function = fun Module:FunctionName/Arity,
+
+  {ok,Socket} = gen_udp:open(Port,[binary,{active,false},inet6]),
+
+  %% Forward to the server loop!
+  gen_server:cast(self(),start),
+  {ok, #state{socket=Socket,function=Function}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -104,10 +100,8 @@ init([]) ->
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
   {stop, Reason :: term(), NewState :: #state{}}).
-handle_call({echo, {Socket,Host,Port}, RawData}, _From, State) ->
-  %% simply echo back on the socket
-  gen_udp:send(Socket, Host, Port, io_lib:fwrite("~s", [RawData])),
-  {reply, {ok, State#state.closesocket}, State}.
+handle_call(_Request, _From, State) ->
+  {reply, ok, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -120,6 +114,11 @@ handle_call({echo, {Socket,Host,Port}, RawData}, _From, State) ->
   {noreply, NewState :: #state{}} |
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), NewState :: #state{}}).
+handle_cast(start, State = #state{socket = Socket}) ->
+  lager:debug("cast=start State=~p", [State]),
+  inet:setopts(Socket, [{active, once}]),
+  {noreply, State};
+
 handle_cast(_Request, State) ->
   {noreply, State}.
 
@@ -137,7 +136,13 @@ handle_cast(_Request, State) ->
   {noreply, NewState :: #state{}} |
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), NewState :: #state{}}).
-handle_info(_Info, State) ->
+handle_info({udp, Socket, Host, Port, Bin}, State) ->
+  lager:debug("info=udp Host=~p, Port=~p Bin=~p",[Host,Port,Bin]),
+  F = State#state.function,
+  {ok,CloseSocket} = F({Socket,Host,Port},Bin),
+  case CloseSocket of
+    true -> gen_udp:close(Socket)
+  end,
   {noreply, State}.
 
 %%--------------------------------------------------------------------
@@ -153,7 +158,9 @@ handle_info(_Info, State) ->
 %%--------------------------------------------------------------------
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
     State :: #state{}) -> term()).
-terminate(_Reason, _State) ->
+terminate(_Reason, State) ->
+  lager:debug("terminate"),
+  gen_udp:close(State#state.socket),
   ok.
 
 %%--------------------------------------------------------------------

@@ -16,11 +16,12 @@
 %%%
 %%% @doc
 %%%
-%%% TCP socket server test
+%%% Generic utils for overriding test specific configurations
+%%% TODO: make it generic over all applications
 %%%
 %%% @end
 %%%-------------------------------------------------------------------
--module(test_utils).
+-module(tcp_test_utils).
 -author("rik.ribbers").
 
 %% API

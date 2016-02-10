@@ -67,11 +67,8 @@ start_link() ->
   {error, Reason :: term()}).
 init([]) ->
   lager:debug("Starting dnsserver_sup..."),
-  %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
-  TcpServer = {tcp_server_sup, {tcp_server_sup, start_link, []}, permanent, 1000, supervisor, [tcp_server_sup]},
-  UdpServer = {udp_server_sup, {udp_server_sup, start_link, []}, permanent, 1000, supervisor, [udp_server_sup]},
 
-  Children = [TcpServer,UdpServer],
+  Children = [],
   RestartStrategy = {one_for_one, 5, 3600},
   {ok, {RestartStrategy, Children}}.
 

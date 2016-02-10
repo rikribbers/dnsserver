@@ -1,5 +1,5 @@
 # dnsserver
-An authorative DNS(SEC) server in Erlang.
+An modular DNS(SEC) server in Erlang.
 
 [![Build Status](https://travis-ci.org/rikribbers/dnsserver.svg?branch=master)](https://travis-ci.org/rikribbers/dnsserver)
 

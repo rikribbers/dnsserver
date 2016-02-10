@@ -1,0 +1,25 @@
+{application, tcp,
+ [{description, "An generic TCP server, with plugable packet handler"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {mod, { tcp_app, []}},
+  {applications,
+   [kernel,
+    stdlib,
+    lager
+   ]},
+  {env,[
+   {tcp_port, 1053},
+   {tcp_nof_accept_sockets, 20},
+   {tcp_close_socket, true},
+   %% function spec:
+   %% -spec(handle_data(Socket:: socket, Data :: term()) ->
+   %%       {ok, CloseSocket :: boolean()}).
+   {tcp_function, {dns_echo_server, handle_data, 2}}
+  ]},
+  {modules, [tcp_server,tcp_accept_server_sup]},
+
+  {maintainers, []},
+  {licenses, []},
+  {links, []}
+ ]}.
