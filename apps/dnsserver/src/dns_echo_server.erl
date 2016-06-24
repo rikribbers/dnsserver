@@ -36,7 +36,7 @@
 
 -define(SERVER, ?MODULE).
 
-%% closesocket: close the socket after
+%% closesocket: close the socket after request
 -record(state, {closesocket}).
 
 %%%===================================================================
@@ -85,8 +85,7 @@ handle_data(Socket, Data) ->
   {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term()} | ignore).
 init([]) ->
-  {ok, CloseSocket} = application:get_env(dnsserver,close_socket),
-  {ok, #state{closesocket = CloseSocket}}.
+  {ok, #state{closesocket = true}}.
 
 %%--------------------------------------------------------------------
 %% @private

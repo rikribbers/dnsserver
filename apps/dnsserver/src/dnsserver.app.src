@@ -8,12 +8,11 @@
         stdlib,
         sasl,
         lager,
+        cluster,
         tcp,
         udp
       ]},
-    {env, [
-      {close_socket,true}
-    ]
+    {env, []
     },
 
     {modules, []},

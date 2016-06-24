@@ -1,0 +1,22 @@
+{application, 'cluster',
+ [{description, "An OTP application for sharing mnesia resources in a cluster"},
+  {vsn, "1.0.0"},
+  {registered, []},
+  {mod, {'cluster_app', []}},
+  {applications,
+   [kernel,
+    stdlib
+   ]},
+  {env,[
+   {use_shadow_servers,false},
+   {shadow_wait_time,3000},
+   {resource_discovery_wait_time, 3000},
+   {tables_discovery_wait_time, 3000},
+   {shadow_servers,['shadow@shadow.dns.dev']}
+   ]},
+  {modules, [resource_discovery]},
+
+  {contributors, []},
+  {licenses, []},
+  {links, []}
+ ]}.

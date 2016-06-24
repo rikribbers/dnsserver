@@ -14,34 +14,41 @@
 %%% ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 %%% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 %%%
-%%%  @doc dnsserver public API
-%%%
+%%% @doc cluster top level supervisor
 %%% @end
 %%%-------------------------------------------------------------------
--module(dnsserver_app).
--author("rik.ribbers").
+-module('cluster_sup').
 
--behaviour(application).
+-behaviour(supervisor).
 
-%% Application callbacks
--export([start/2
-  , stop/1]).
-
-%%====================================================================
 %% API
+-export([start_link/0]).
+
+%% Supervisor callbacks
+-export([init/1]).
+
+-define(SERVER, ?MODULE).
+
+%%====================================================================
+%% API functions
 %%====================================================================
 
-start(_StartType, _StartArgs) ->
-  lager:debug("Starting dnsserver_app..."),
+start_link() ->
+  supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
-  %% Start the mnesia cluster. provide the local mnesia resources
-  cluster_app:start_cluster([{simple_cache,ram_copies}]),
+%%====================================================================
+%% Supervisor callbacks
+%%====================================================================
 
-  dnsserver_sup:start_link().
+%% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
+init([]) ->
+  ResourceWorker = {resource_discovery, {resource_discovery, start_link, []},
+    permanent, 30000, worker, [resource_discovery]},
 
-%%--------------------------------------------------------------------
-stop(_State) ->
-  ok.
+  Children = [ResourceWorker],
+  RestartStrategy = {one_for_one, 5, 3600},
+
+  {ok, {RestartStrategy, Children}}.
 
 %%====================================================================
 %% Internal functions

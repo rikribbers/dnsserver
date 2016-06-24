@@ -6,4 +6,4 @@
 export ERL_INETRC=`pwd`/config/erl_inetrc
 export ERL_CRASH_DUMP=/var/log/dnsserver
 
-`pwd`_build/default/rel/dnsserver/bin/dnsserver console
+_build/default/rel/dnsserver/bin/dnsserver console
