@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-erl -sname observer -hidden -setcookie dnsserver_cookie -run observer
+erl -name observer -hidden -setcookie dns -run observer

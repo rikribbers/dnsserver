@@ -5,14 +5,15 @@
   {mod, {'cluster_app', []}},
   {applications,
    [kernel,
-    stdlib
+    stdlib,
+    mnesia
    ]},
   {env,[
-   {use_shadow_servers,false},
+   {use_shadow_servers,true},
    {shadow_wait_time,3000},
    {resource_discovery_wait_time, 3000},
    {tables_discovery_wait_time, 3000},
-   {shadow_servers,['shadow@shadow.dns.dev']}
+   {shadow_servers,['cluster_contact@dnsserver.dns.dev']}
    ]},
   {modules, [resource_discovery]},
 

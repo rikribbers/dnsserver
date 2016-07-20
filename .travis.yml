@@ -1,6 +1,10 @@
-language: erlang
+sudo: required
+
+services:
+  - docker
+
 notifications:
   email: rik.ribbers@gmail.com
-otp_release:
-  - 18.2
-script: "./rebar3 ct"
+
+script:
+ - docker run rikribbers/erldev /bin/sh -c "cd /root; git clone https://github.com/rikribbers/dnsserver; cd dnsserver; make"

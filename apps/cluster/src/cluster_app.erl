@@ -25,8 +25,10 @@
 %% Application callbacks
 -export([start/2
         ,stop/1
-        ,start_cluster/1
+        ,start_cluster/0
        ]).
+
+-record(kv, {key, value}).
 
 %%====================================================================
 %% API
@@ -45,13 +47,12 @@ stop(_State) ->
 %% Internal functions
 %%====================================================================
 %% Report yourself to the cluster for sharing resources
-start_cluster(SharedResources) ->
-  lager:debug("SharedResources=~p",[SharedResources]),
-
+start_cluster() ->
+  Resources = [simplecache],
   %% Make sure the resource discovery worker is up-and-running
   %% and local mensia is not yet running.
   application:ensure_started(resource_discovery),
-  stopped = mnesia:stop(),
+  mnesia:stop(),
 
   {ok, UseShadowServer} = application:get_env(cluster,use_shadow_servers),
   case UseShadowServer of
@@ -65,8 +66,7 @@ start_cluster(SharedResources) ->
   %% Add the shared resources
   lists:foreach( fun (R) -> resource_discovery:add_local_resource(R, node()),
     resource_discovery:add_target_resource_type(R) end,
-    SharedResources),
-
+    Resources ),
 
   resource_discovery:trade_resources(),
 
@@ -74,8 +74,10 @@ start_cluster(SharedResources) ->
   {ok,WaitTime} = application:get_env(cluster,resource_discovery_wait_time),
   timer:sleep(WaitTime),
 
-
-  dynamic_db_init(SharedResources).
+  %% LATER refactor table definitions outof here.
+  dynamic_db_init([{simplecache,[ {attributes, record_info(fields, kv)},
+    {ram_copies,[node()]}
+  ]}]).
 
 
 ensure_contact_start(ShadowNodes) ->
@@ -124,24 +126,22 @@ wait_for_nodes(MinNodes, SliceTime, Iterations) ->
   end.
 
 %% Start initialising database
-dynamic_db_init([H|T]) ->
-%%  N = [node()],
-  {ok,E} = resource_discovery:fetch_resources(H),
+dynamic_db_init([{Resource,Options}|T]) ->
+  {ok,E} = resource_discovery:fetch_resources(Resource),
   case E == [node()] of
     true ->
-      lager:info("Initializing initial master mnesia node..."),
-      %% Make sure mnesia is stopped before automagic resource
-      %% discovery is started. mnesia will be started later.
-      {ok, MnesiaDir} = application:get_env(cluster,mnesia_dir),
-      application:set_env(mnesia, dir, MnesiaDir),
-      ok = mnesia:start();
-    false ->
-      lager:info("Initializing new slave mnesia node..."),
+      lager:info("Initializing initial mnesia node..."),
       ok = mnesia:delete_schema([node()]),
       ok = mnesia:start(),
+      lager:info("Creating Resource=~p",[Resource]),
+      {atomic, ok} = mnesia:create_table(Resource, Options);
+    false ->
+      lager:info("Initializing slave mnesia node..."),
       %% Replaces local B schema wit remote C
+      ok = mnesia:delete_schema([node()]),
+      ok = mnesia:start(),
       mnesia:add_table_copy(schema, node(), ram_copies),
-      dynamic_db_init(H,T)
+      dynamic_db_init(Resource,T)
   end,
   application:ensure_started(mnesia),
   Tables = mnesia:system_info(tables),
@@ -158,7 +158,7 @@ dynamic_db_init(Resource,[]) ->
   add_extra_nodes(Nodes,Resource).
 
 %% TODO -spec(add_extra_node(Nodes :: [node()] ,Resource :: any()) -> ok).
-add_extra_nodes([Node | T],Resource) ->
+add_extra_nodes([Node | T], Resource) ->
   lager:info("Add extra node Node=~p T=~p Resource=~p", [Node, T,Resource]),
   case mnesia:change_config(extra_db_nodes, [Node]) of
     {ok, [Node]} ->

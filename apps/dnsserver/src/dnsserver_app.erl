@@ -27,6 +27,8 @@
 -export([start/2
   , stop/1]).
 
+
+
 %%====================================================================
 %% API
 %%====================================================================
@@ -35,7 +37,7 @@ start(_StartType, _StartArgs) ->
   lager:debug("Starting dnsserver_app..."),
 
   %% Start the mnesia cluster. provide the local mnesia resources
-  cluster_app:start_cluster([{simple_cache,ram_copies}]),
+  cluster_app:start_cluster(),
 
   dnsserver_sup:start_link().
 

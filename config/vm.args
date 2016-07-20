@@ -1,6 +1,2 @@
--sname dnsserver
-
--setcookie dnsserver_cookie
-
-+K true
-+A30
+-name dnsserver
+-setcookie dns
