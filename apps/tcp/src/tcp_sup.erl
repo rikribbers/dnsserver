@@ -62,12 +62,10 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 -spec(init(Args :: term()) ->
-    {ok, {SupFlags :: {RestartStrategy :: supervisor:strategy(),
-        MaxR :: non_neg_integer(), MaxT :: non_neg_integer()},
-        [ChildSpec :: supervisor:child_spec()]
-    }} |
-    ignore |
-    {error, Reason :: term()}).
+  {ok, {SupFlags :: supervisor:sup_flags(),
+    [ChildSpec :: supervisor:child_spec()]
+  }} |
+  ignore ).
 init([]) ->
     lager:debug("Starting tcp_sup..."),
     %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}

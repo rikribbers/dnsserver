@@ -239,7 +239,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 
 %% Internal functions
--spec(handle_data(Socket :: socket, RawData :: term(), State :: #state{})
+-spec(handle_data(Socket :: port(), RawData :: term(), State :: #state{})
       -> {ok, NewState :: #state{}}).
 handle_data(Socket, RawData, State) ->
   Function = State#state.function,

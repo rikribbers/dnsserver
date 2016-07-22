@@ -339,6 +339,9 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+-spec ( add_resource(Type :: atom, Resource :: atom, ResourceTuples :: dict:dict(atom,atom) ) ->
+dict:dict(atom,atom)).
 add_resource(Type, Resource, ResourceTuples) ->
   lager:debug("add_resource Type=~p Resource=~p", [Type, Resource]),
   case dict:find(Type, ResourceTuples) of
@@ -350,11 +353,16 @@ add_resource(Type, Resource, ResourceTuples) ->
       lager:debug("Not found, adding new Resource"),
       dict:store(Type, [Resource], ResourceTuples)
   end.
+
+-spec ( add_resources(Type :: [{atom,atom}], ResourceTuples :: dict:dict(atom,atom) ) ->
+  dict:dict(atom,atom)).
 add_resources([{Type, Resource} | T], ResourceTuples) ->
   add_resources(T, add_resource(Type, Resource, ResourceTuples));
+
 add_resources([], ResourceTuples) ->
   ResourceTuples.
 
+-spec(resources_for_types(Types :: [atom], ResourceTuples :: dict:dict(atom,atom)) -> [{atom, atom}] | [] ).
 resources_for_types(Types, ResourceTuples) ->
   lager:debug("resources_for_types Types=~p", [Types]),
   Fun =

@@ -59,12 +59,10 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 -spec(init(Args :: term()) ->
-  {ok, {SupFlags :: {RestartStrategy :: supervisor:strategy(),
-    MaxR :: non_neg_integer(), MaxT :: non_neg_integer()},
+  {ok, {SupFlags :: supervisor:sup_flags(),
     [ChildSpec :: supervisor:child_spec()]
   }} |
-  ignore |
-  {error, Reason :: term()}).
+  ignore ).
 init([]) ->
   lager:debug("Starting dnsserver_sup..."),
 
